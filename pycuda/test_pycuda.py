@@ -1,3 +1,5 @@
+# code directly copied from https://wiki.tiker.net/PyCuda/Examples/Demo
+
 # Sample source code from the Tutorial Introduction in the documentation.
 
 import pycuda.driver as cuda

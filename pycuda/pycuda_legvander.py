@@ -2,6 +2,7 @@ import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
 
+import sys
 import numpy as np
 
 #avoid going crazy
@@ -11,7 +12,18 @@ np.random.seed(1)
 x = np.random.rand(100)
 N = x.shape[0]
 deg = 10
-v = np.zeros_like(x)
+v = np.zeros((deg+1,N))
+
+print("x.shape", x.shape)
+print("v.shape", v.shape)
+
+#allocate the gpu memory
+x_gpu = cuda.mem_alloc(x.nbytes)
+v_gpu = cuda.mem_alloc(v.nbytes)
+
+#move the data to the gpu memory we allocated
+cuda.memcpy_htod(x_gpu, x)
+cuda.memcpy_htod(v_gpu, v)
 
 ####our numba legvander
 ###def legvander(x, deg, output_matrix):
@@ -42,16 +54,21 @@ v = np.zeros_like(x)
 
 #here is our cuda kernel in raw cuda
 mod = SourceModule("""
-    __global__ void legvander(float *x, int *N, int *deg, float *v)
+    __global__ void legvander(float *x, float *v)
     {
+
+    int ideg = 10;
+    int N = 100;
 
     // int idx = threadIdx.x + blockIdx.x * blockDim.x;
     // int stride = blockDim.x * gridDim.x;
 
     // for (int i; idx<=i<N; i+=stride) {
 
-    v[0] = 1;
-    // v[1] = x;
+    //here v is a pointer bc we are indexing but x is the actual data?!?!
+    v[0][] = *x*0 + 1;
+    v[1][] = *x;
+
     // we guarentee deg > 0
     // for i in range(2, ideg + 1):
 
@@ -66,28 +83,11 @@ mod = SourceModule("""
 func = mod.get_function("legvander")
 
 #this actually runs our kernel on the gpu
-func(cuda.InOut(x), cuda.InOut(N), cuda.InOut(deg), cuda.InOut(v), block=(100,100,1))
+func(x_gpu, v_gpu, block=(100,1,1))
 
-print("v:")
-print(v)
-
-#### alternate kernel invocation -------------------------------------------------
-###
-####this option will do the data transfer for you, maybe that's better
-###
-###func(cuda.InOut(a), block=(4, 4, 1))
-###print("doubled with InOut:")
-###print(a)
-###
-#### part 2 ----------------------------------------------------------------------
-###
-###import pycuda.gpuarray as gpuarray
-###a_gpu = gpuarray.to_gpu(numpy.random.randn(4,4).astype(numpy.float32))
-###a_doubled = (2*a_gpu).get()
-###
-###print("original array:")
-###print(a_gpu)
-###print("doubled with gpuarray:")
-###print(a_doubled)
-
+#prepare buffer
+v_result = np.zeros_like(v)
+cuda.memcpy_dtoh(v_result, v_gpu)
+print("v:", v)
+print("v_result:", v_result)
 
