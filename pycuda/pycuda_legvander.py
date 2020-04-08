@@ -59,6 +59,7 @@ mod = SourceModule("""
     __global__ void legvander(float *x, float *v)
     {
 
+    int ideg = 11;
     int N = 100;
 
     int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -66,11 +67,15 @@ mod = SourceModule("""
  
     for (int i=index; i<N; i+=stride)
     {
-
     //remember v is a pointer, we are indexing into the 1d pointer of the 2d array v
-
     v[i] = 1;
     v[i+N] = x[i];
+
+        //now we loop over row number j
+        for (int j=2; j<ideg +1; j++)
+        {
+        v[i+j*N] = (v[i+(j-1)*N] *x[i] *(2*j-1) - v[i+(j-2)*N] *(j-1)) / j;
+        }
 
     }
 
@@ -86,6 +91,18 @@ func(x_gpu, v_gpu, block=(16,16,1))
 #prepare buffer
 v_result = np.zeros_like(v)
 cuda.memcpy_dtoh(v_result, v_gpu)
-print("v:", v)
 print("v_result:", v_result)
 
+#try moveaxis
+v_moveaxis = np.moveaxis(v_result, 0, -1)
+print("v_moveaxis:", v_moveaxis)
+
+#why do we need moveaxis here but not in numba? maybe some kind of row/column shift there?
+
+#compare to cpu version
+v_cpu = np.polynomial.legendre.legvander(x, deg)
+print("v_cpu:", v_cpu)
+
+v_diff = v_cpu - v_moveaxis
+print("v_diff:", v_diff)
+#different by single precision e-08 -- maybe expected since cpu is double and gpu is single?
