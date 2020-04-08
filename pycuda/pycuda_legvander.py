@@ -9,17 +9,18 @@ import numpy as np
 np.random.seed(1)
 
 #here are our data
-x = np.random.rand(100)
+x = np.random.rand(100).astype(np.float32)
 N = x.shape[0]
 deg = 10
-v = np.zeros((deg+1,N))
+ideg = deg + 1
+v = np.zeros((ideg,N)).astype(np.float32)
 
 print("x.shape", x.shape)
 print("v.shape", v.shape)
 
 #allocate the gpu memory
-x_gpu = cuda.mem_alloc(x.nbytes)
-v_gpu = cuda.mem_alloc(v.nbytes)
+x_gpu = cuda.mem_alloc(x.size * x.dtype.itemsize)
+v_gpu = cuda.mem_alloc(v.size * v.dtype.itemsize)
 
 #move the data to the gpu memory we allocated
 cuda.memcpy_htod(x_gpu, x)
@@ -53,28 +54,25 @@ cuda.memcpy_htod(v_gpu, v)
 #range is ([start], stop[, step])
 
 #here is our cuda kernel in raw cuda
+#although we are filling a 2d array (v) it is really a 1d kernel
 mod = SourceModule("""
     __global__ void legvander(float *x, float *v)
     {
 
-    int ideg = 10;
     int N = 100;
 
-    // int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    // int stride = blockDim.x * gridDim.x;
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+ 
+    for (int i=index; i<N; i+=stride)
+    {
 
-    // for (int i; idx<=i<N; i+=stride) {
+    //remember v is a pointer, we are indexing into the 1d pointer of the 2d array v
 
-    //here v is a pointer bc we are indexing but x is the actual data?!?!
-    v[0][] = *x*0 + 1;
-    v[1][] = *x;
+    v[i] = 1;
+    v[i+N] = x[i];
 
-    // we guarentee deg > 0
-    // for i in range(2, ideg + 1):
-
-    //for (int i = 2; i < deg+1; i++) {
-    //    v[i] = (v[i-1]*x*(2*i - 1) - v[i-2]*(i - 1))/i;
-
+    }
 
     }
     """)
@@ -82,8 +80,8 @@ mod = SourceModule("""
 #get ready
 func = mod.get_function("legvander")
 
-#this actually runs our kernel on the gpu
-func(x_gpu, v_gpu, block=(100,1,1))
+#run our gpu function
+func(x_gpu, v_gpu, block=(16,16,1))
 
 #prepare buffer
 v_result = np.zeros_like(v)
