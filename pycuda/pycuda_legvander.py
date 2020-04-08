@@ -4,25 +4,33 @@ from pycuda.compiler import SourceModule
 
 import sys
 import numpy as np
+import time
 
 #avoid going crazy
 np.random.seed(1)
 
+#blocksize
+blocksize = 16
+
 #here are our data
-x = np.random.rand(100).astype(np.float32)
+x = np.random.rand(100000).astype(np.float32)
 N = x.shape[0]
-deg = 10
+deg = 50
 ideg = deg + 1
 v = np.zeros((ideg,N)).astype(np.float32)
 
-print("x.shape", x.shape)
-print("v.shape", v.shape)
+#print("x.shape", x.shape)
+#print("v.shape", v.shape)
 
 #allocate the gpu memory
+#N_gpu = cuda.mem_alloc(4) #4 bytes for int?
+#ideg_gpu = cuda.mem_alloc(4) #4 bytes for int?
 x_gpu = cuda.mem_alloc(x.size * x.dtype.itemsize)
 v_gpu = cuda.mem_alloc(v.size * v.dtype.itemsize)
 
 #move the data to the gpu memory we allocated
+#cuda.memcpy_htod(N_gpu, N)
+#cuda.memcpy_htod(ideg_gpu, ideg)
 cuda.memcpy_htod(x_gpu, x)
 cuda.memcpy_htod(v_gpu, v)
 
@@ -59,8 +67,8 @@ mod = SourceModule("""
     __global__ void legvander(float *x, float *v)
     {
 
-    int ideg = 11;
-    int N = 100;
+    int N = 100000;
+    int deg = 50;
 
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
@@ -72,7 +80,7 @@ mod = SourceModule("""
     v[i+N] = x[i];
 
         //now we loop over row number j
-        for (int j=2; j<ideg +1; j++)
+        for (int j=2; j<deg +1; j++)
         {
         v[i+j*N] = (v[i+(j-1)*N] *x[i] *(2*j-1) - v[i+(j-2)*N] *(j-1)) / j;
         }
@@ -85,13 +93,16 @@ mod = SourceModule("""
 #get ready
 func = mod.get_function("legvander")
 
-#run our gpu function
-func(x_gpu, v_gpu, block=(16,16,1))
+#run our pycuda function
+time_start = time.time()
+func(x_gpu, v_gpu, block=(blocksize,blocksize,1))
+time_end = time.time()
+pycuda_time = time_end - time_start
 
 #prepare buffer
 v_result = np.zeros_like(v)
 cuda.memcpy_dtoh(v_result, v_gpu)
-print("v_result:", v_result)
+#print("v_result:", v_result)
 
 #try moveaxis
 v_moveaxis = np.moveaxis(v_result, 0, -1)
@@ -100,9 +111,22 @@ print("v_moveaxis:", v_moveaxis)
 #why do we need moveaxis here but not in numba? maybe some kind of row/column shift there?
 
 #compare to cpu version
+time_start = time.time()
 v_cpu = np.polynomial.legendre.legvander(x, deg)
+time_end = time.time()
+cpu_time = time_end - time_start
 print("v_cpu:", v_cpu)
 
 v_diff = v_cpu - v_moveaxis
-print("v_diff:", v_diff)
+#print("v_diff:", v_diff)
+v_absdiff = np.abs(v_diff / v_cpu)
+print("v_absdiff:",v_absdiff)
+v_diffmax = np.max(v_absdiff)
+print("v_diffmax:", v_diffmax)
 #different by single precision e-08 -- maybe expected since cpu is double and gpu is single?
+
+#compare gpu and cpu time
+print("pycuda time:", pycuda_time)
+print("cpu time:", cpu_time)
+
+
