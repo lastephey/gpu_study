@@ -1,9 +1,9 @@
 import timeit
 import numpy as np
 
-timeit_setup = 'from numba_legval import legval_kernel; arraysize=100; polydeg=10; blocksize=32'
+timeit_setup = 'from numba_legval import legval_kernel; arraysize=100; blocksize=32'
 
-timeit_code = 'results = legval_kernel(arraysize, polydeg, blocksize)'
+timeit_code = 'results = legval_kernel(arraysize, blocksize)'
 
 repeat = 3
 number = 100

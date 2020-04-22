@@ -1,7 +1,7 @@
 import numpy as np
 import cupy as cp
 
-def legval_kernel(arraysize, polydeg, blocksize):
+def legval_kernel(arraysize, blocksize):
     #here are our data
     x_cpu = np.random.rand(arraysize).astype(np.float32)
     N = x_cpu.shape[0]

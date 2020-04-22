@@ -3,11 +3,11 @@ import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
 
-def legval_kernel(arraysize, polydeg, blocksize):
+def legval_kernel(arraysize, blocksize):
     #here are our data
     x = np.random.rand(arraysize).astype(np.float32)
     N = x.shape[0]
-    deg = polydeg
+    deg = 20
     ideg = deg + 1
     v = np.zeros((ideg,N)).astype(np.float32)
     

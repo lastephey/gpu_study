@@ -1,8 +1,8 @@
 import timeit
 
-timeit_setup = 'from cupy_legval import legval_kernel; arraysize=1000; polydeg=20; blocksize=16'
+timeit_setup = 'from cupy_legval import legval_kernel; arraysize=1000; blocksize=16'
 
-timeit_code = 'results = legval_kernel(arraysize, polydeg, blocksize)'
+timeit_code = 'results = legval_kernel(arraysize, blocksize)'
 
 repeat = 3
 number = 100
