@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import argparse
 import os
-#from gpu_study.pycuda import timeit_pycuda_legval
-#from gpu_study.numba import timeit_numba_legval
-#from gpu_study.cupy import timeit_cupy_legval
+import timeit 
+
+from gpu_study.pycuda import pycuda_legval
+from gpu_study.numba import numba_legval
+from gpu_study.cupy import cupy_legval
 
 #this script should orchestrate all the benchmarks as a part of our python on gpus study
 
@@ -13,6 +15,7 @@ import os
 #arraysize
 #kernelsize
 #where to write what to name output? or have that happen automatically?
+
 def parse_arguments():
     print("parsing data")
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -24,6 +27,8 @@ def parse_arguments():
                         help='size of array for benchmarks')
     parser.add_argument('--blocks', '-s', type=int, default=[32,64],
                         help='blocksize for gpu kernels')
+    parser.add_argument('--repeat', '-r', type=int, default=3,
+                        help='how many times timeit will run')
     parser.add_argument('--ntests', '-n', type=int, default=100,
                         help='how many times timeit will run each test')
     args = parser.parse_args()
@@ -33,24 +38,34 @@ def write_output():
     print("output data written")
     return
 
+def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
+    timeit_setup = 'from {}_{} import {}_kernel; arraysize={}; blocksize={}'\
+                   .format(framework,benchmark,benchmark,arraysize,blocksize)
+    print(timeit_setup)               
+    timeit_code = 'results = {}_kernel(arraysize, blocksize)'\
+                  .format(benchmark)
+    print(timeit_code)              
+    times = timeit.repeat(setup=timeit_setup, stmt=timeit_code, repeat=repeat, number=number)
+    print('Min {} {} time of {} trials, {} runs each: {}'\
+          .format(framework, benchmark, repeat, number, min(times)))
+
 def main():
     args = parse_arguments()
     print("frameworks", args.frameworks)
     print("benchmarks", args.frameworks)
     print("arraysize", args.arrays)
     print("blocksize", args.blocks)
+    print("repeat", args.repeat)
     print("ntests", args.ntests)
     for framework in args.frameworks:
         for benchmark in args.benchmarks:
             for arraysize in args.arrays:
                 for blocksize in args.blocks:
                     #blocksize may or may not be a good parameter to loop over
-                    #some kernels really sensitive to block size, will crash with bad choice
-                    #loop over gpu kernel blocksize (depending on framework)
-        
-                    #timeit_pycuda_legval(arraysize,blocksize)
-                    test_string="timeit_{}_{}({},{})".format(framework, benchmark, arraysize, blocksize)
-                    print(test_string)
+
+                    results = time_kernel(framework, benchmark, arraysize, 
+                                          blocksize, repeat=args.repeat, 
+                                          number=args.ntests)
     write_output()
     return
 
