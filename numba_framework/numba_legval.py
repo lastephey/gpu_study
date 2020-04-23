@@ -11,11 +11,11 @@ def legvander(x, deg, v):
         for j in range(2, deg + 1):
             v[i][j] = (v[i][j-1]*x[i]*(2*j - 1) - v[i][j-2]*(j - 1)) / j
 
-def legval_kernel(arraysize, blocksize):
+def numba_legval(arraysize, blocksize):
     #here are our data
     x = cp.random.rand(arraysize)
     N = x.shape[0]
-    deg = polydeg
+    deg = 10
     ideg = deg + 1
     v = cp.zeros((ideg,N))
 

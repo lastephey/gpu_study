@@ -3,21 +3,10 @@ import argparse
 import os
 import timeit 
 
-#Project/
-#  Animals/
-#    __init__.py
-#    Mammals.py
-#    Birds.py\
-
-#in __init__.py
-
-#from .Mammals import Mammals
-#from .Birds import Birds
-
-import numpy_framework
-#from pycuda_framework.pycuda_legval import legval_kernel
-#from numba_framework.numba_legval import legval_kernel
-#from cupy_framework.cupy_legval import legval_kernel
+#import numpy_framework
+#import cupy_framework
+#import numba_framework
+#import pycuda_framework
 
 #this script should orchestrate all the benchmarks as a part of our python on gpus study
 
@@ -51,11 +40,11 @@ def write_output():
     return
 
 def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
-    timeit_setup = 'from {}_{} import {}_kernel; arraysize={}; blocksize={}'\
-                   .format(framework,benchmark,benchmark,arraysize,blocksize)
+    timeit_setup = 'import {}_framework; arraysize={}; blocksize={}'\
+                   .format(framework, arraysize, blocksize)
     print(timeit_setup)               
-    timeit_code = 'results = {}_kernel(arraysize, blocksize)'\
-                  .format(benchmark)
+    timeit_code = 'results = {}_framework.{}_{}(arraysize, blocksize)'\
+                  .format(framework, framework, benchmark)
     print(timeit_code)              
     times = timeit.repeat(setup=timeit_setup, stmt=timeit_code, repeat=repeat, number=number)
     print('Min {} {} time of {} trials, {} runs each: {}'\

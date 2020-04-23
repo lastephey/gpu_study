@@ -1,11 +1,11 @@
 import numpy as np
 import cupy as cp
 
-def legval_kernel(arraysize, blocksize):
+def cupy_legval(arraysize, blocksize):
     #here are our data
     x_cpu = np.random.rand(arraysize).astype(np.float32)
     N = x_cpu.shape[0]
-    deg = polydeg
+    deg = 10
     ideg = deg + 1
     v_cpu = np.zeros((ideg,N)).astype(np.float32)
     

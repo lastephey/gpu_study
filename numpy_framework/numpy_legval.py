@@ -1,10 +1,10 @@
 import numpy as np
 
-def legval_kernel(arraysize, blocksize):
+def numpy_legval(arraysize, blocksize):
     #here are our data
     x = np.random.rand(arraysize).astype(np.float32)
-    N = x_cpu.shape[0]
-    deg = polydeg
+    N = x.shape[0]
+    deg = 10
     ideg = deg + 1
     v = np.zeros((ideg,N)).astype(np.float32)
    
