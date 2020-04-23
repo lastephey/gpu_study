@@ -3,11 +3,6 @@ import argparse
 import os
 import timeit 
 
-#import numpy_framework
-#import cupy_framework
-#import numba_framework
-#import pycuda_framework
-
 #this script should orchestrate all the benchmarks as a part of our python on gpus study
 
 #should have nice argparse
