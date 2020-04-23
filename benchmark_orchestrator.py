@@ -3,9 +3,21 @@ import argparse
 import os
 import timeit 
 
-from gpu_study.pycuda import pycuda_legval
-from gpu_study.numba import numba_legval
-from gpu_study.cupy import cupy_legval
+#Project/
+#  Animals/
+#    __init__.py
+#    Mammals.py
+#    Birds.py\
+
+#in __init__.py
+
+#from .Mammals import Mammals
+#from .Birds import Birds
+
+import numpy_framework
+#from pycuda_framework.pycuda_legval import legval_kernel
+#from numba_framework.numba_legval import legval_kernel
+#from cupy_framework.cupy_legval import legval_kernel
 
 #this script should orchestrate all the benchmarks as a part of our python on gpus study
 
@@ -19,7 +31,7 @@ from gpu_study.cupy import cupy_legval
 def parse_arguments():
     print("parsing data")
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--frameworks', '-f', type=str, default=['cupy','numba','pycuda'],
+    parser.add_argument('--frameworks', '-f', type=str, default=['numpy'],
                         help='which frameworks to use')
     parser.add_argument('--benchmarks', '-b', type=str, default=['legval'],
                         help='which benchmarks to run')
