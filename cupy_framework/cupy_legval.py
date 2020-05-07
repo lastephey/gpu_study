@@ -1,6 +1,9 @@
 import numpy as np
 import cupy as cp
 
+#set numpy random seed
+np.random.seed(42)
+
 def cupy_legval(arraysize, blocksize):
     #here are our data
     x_cpu = np.random.rand(arraysize).astype(np.float32)
