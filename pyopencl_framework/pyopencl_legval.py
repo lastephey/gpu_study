@@ -5,6 +5,9 @@ from __future__ import absolute_import, print_function
 import numpy as np
 import pyopencl as cl
 
+#set numpy random seed
+np.random.seed(42)
+
 #try to make sure we get a gpu
 devices = cl.get_platforms()[0].get_devices(cl.device_type.GPU)
 print(devices)
@@ -24,8 +27,9 @@ def pyopencl_legval(arraysize, blocksize):
     #allocate the gpu memory, read only
     mf = cl.mem_flags
     x = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=x_cpu)
-    v = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=v_cpu)
-    
+    v = cl.Buffer(ctx, mf.READ_WRITE, size=v_cpu.nbytes)
+    cl.enqueue_copy(queue, v, v_cpu)
+
     #need to figure out how to pass constants in here, too
     prg = cl.Program(ctx, """
     __kernel void legvander(
@@ -35,8 +39,14 @@ def pyopencl_legval(arraysize, blocksize):
         int N = 100;
         int deg = 10;
 
+        // int index = blockIdx.x * blockDim.x + threadIdx.x;
+        // int stride = blockDim.x * gridDim.x;
+
+        //blockDim.x = get_local_size(0), number of work-items per work-group or cuda: threads in block 
+        //gridDim.x = get_num_groups(0), total number of work-groups or cuda: number of blocks in grid
+
         int index = get_global_id(0); //x-coord- (1) is y-coord
-        int stride = get_local_size(0) * get_group_id(0); //not sure if i translated correctly
+        int stride = get_local_size(0)*get_num_groups(0);
 
         for (int i=index; i<N; i+=stride)
         {
@@ -44,15 +54,15 @@ def pyopencl_legval(arraysize, blocksize):
         v[i] = 1;
         v[i+N] = x[i];
     
-            // //now we loop over row number j
-            // for (int j=2; j<deg +1; j++)
-            // {
-            // v[i+j*N] = (v[i+(j-1)*N] *x[i] *(2*j-1) - v[i+(j-2)*N] *(j-1)) / j;
-            // }
+            //now we loop over row number j
+            for (int j=2; j<deg +1; j++)
+            {
+            v[i+j*N] = (v[i+(j-1)*N] *x[i] *(2*j-1) - v[i+(j-2)*N] *(j-1)) / j;
+            }
     
         }
-
-        }
+    
+        }    
         """).build()
    
     #now actually run the gpu kernel
@@ -66,8 +76,11 @@ def pyopencl_legval(arraysize, blocksize):
     v_gpu = np.empty_like(v_cpu)
     cl.enqueue_copy(queue, v_gpu, v)
    
-    #return cpu values for correctness checking
-    print("gpu results", v_gpu)
-    return v_gpu
+    #need moveaxis here, same as pyopencl
+    v_moveaxis = np.moveaxis(v_gpu, 0, -1)
+    #return values for correctness checking
+    return v_moveaxis
+
 
 results = pyopencl_legval(arraysize=100,blocksize=32)
+print(results)
