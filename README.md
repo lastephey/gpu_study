@@ -5,23 +5,42 @@ Python on GPUs.
 
 # Frameworks 
 
-## NumPy
+## NumPy (CPU baseline and correctness)
 
-For cpu testing
+### Legval
 
 ## CuPy
 
+### Legval
+
 ## Numba (CUDA)
+
+### Legval
 
 ## PyCUDA
 
-# Coming soon
+### Legval
+
+## PyOpenCL
+
+### Legval
 
 ## JAX
 
 ## Legate
 
-## PyOpenCL
+# Overview
+
+The `bash_orchestrator.sh` script coordinates the benchmark. This was required
+in order to be able to hop in and out of conda environments for each framework.
+The `run_benchmark.py` takes care of the rest inside each conda
+environment/framework. 
+
+In each framework directory the `framework_requirements.txt` file details the
+contents of each conda environment.
+
+
+
 
 
 
