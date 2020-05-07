@@ -1,6 +1,9 @@
 import cupy as cp
 from numba import cuda
 
+#set numpy random seed
+np.random.seed(42)
+
 @cuda.jit
 def legvander(x, deg, v):
     i = cuda.grid(1)
