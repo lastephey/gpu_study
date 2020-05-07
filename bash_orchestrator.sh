@@ -6,34 +6,39 @@
 module load python
 
 #numpy
-source activate benchmark_numpy
-#run stuff
-source deativate
+source activate numpy
+srun -n 1 python run_benchmark.py -f numpy -a 1000
+source deactivate
+
+#numba - don't think this one is getting the right answer yet
+source activate numba
+srun -n 1 python run_benchmark.py -f numba -a 1000
+source deactivate
 
 #cupy
-source activate benchmark_cupy
-#run stuff
+source activate cupy
+srun -n 1 python run_benchmark.py -f cupy -a 1000
 source deactivate
 
 #pycuda
-source activate benchmark_pycuda
-#run stuff
+source activate pycuda
+srun -n 1 python run_benchmark.py -f pycuda -a 1000
 source deactivate
 
 #pyopencl
-source activate benchmark_pyopencl
-#run stuff
+source activate pyopencl
+srun -n 1 python run_benchmark.py -f pyopencl -a 1000
 source deactivate
 
-#jax
-source activate benchmark_jax
-#run stuff
-source deactivate
-
-#legate
-source activate benchmark_legate
-#run stuff
-source deactivate
+####jax
+###source activate jax
+####run stuff
+###source deactivate
+###
+####legate
+###source activate legate
+####run stuff
+###source deactivate
 
 #save the data
 #do the fancy analysis later in python

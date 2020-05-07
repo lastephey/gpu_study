@@ -24,5 +24,5 @@ def numpy_legval(arraysize, blocksize):
     return cpu_res
 
 
-results = numpy_legval(arraysize=100,blocksize=32)
-print(results)
+#results = numpy_legval(arraysize=100,blocksize=32)
+#print(results)

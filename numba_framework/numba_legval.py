@@ -1,3 +1,4 @@
+import numpy as np
 import cupy as cp
 from numba import cuda
 
@@ -16,7 +17,7 @@ def legvander(x, deg, v):
 
 def numba_legval(arraysize, blocksize):
     #here are our data
-    x = cp.random.rand(arraysize)
+    x = cp.asarray(np.random.rand(arraysize))
     N = x.shape[0]
     deg = 10
     ideg = deg + 1
@@ -27,3 +28,7 @@ def numba_legval(arraysize, blocksize):
     v_cpu = cp.asnumpy(v)
     return v_cpu
 
+
+##for testing
+#results = numba_legval(100,32)
+#print(results)

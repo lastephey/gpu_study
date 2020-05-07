@@ -79,6 +79,7 @@ def pyopencl_legval(arraysize, blocksize):
     #return values for correctness checking
     return v_moveaxis
 
+#results = pyopencl_legval(arraysize=100,blocksize=32)
+#print(results)
 
-results = pyopencl_legval(arraysize=100,blocksize=32)
-print(results)
+
