@@ -24,26 +24,23 @@ def pyopencl_legval(arraysize, blocksize):
     ctx = cl.create_some_context()
     queue = cl.CommandQueue(ctx)
     
-    #allocate the gpu memory, read only
+    #allocate the gpu memory
     mf = cl.mem_flags
     x = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=x_cpu)
-    v = cl.Buffer(ctx, mf.READ_WRITE, size=v_cpu.nbytes)
-    cl.enqueue_copy(queue, v, v_cpu)
+    v = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=v_cpu)
 
     #need to figure out how to pass constants in here, too
     prg = cl.Program(ctx, """
     __kernel void legvander(
+        ushort const N, ushort const deg,
         __global const float *x, __global float *v)
         {
-
-        int N = 100;
-        int deg = 10;
 
         // int index = blockIdx.x * blockDim.x + threadIdx.x;
         // int stride = blockDim.x * gridDim.x;
 
-        //blockDim.x = get_local_size(0), number of work-items per work-group or cuda: threads in block 
-        //gridDim.x = get_num_groups(0), total number of work-groups or cuda: number of blocks in grid
+        // blockDim.x = get_local_size(0), number of work-items per work-group or cuda: threads in block 
+        // gridDim.x = get_num_groups(0), total number of work-groups or cuda: number of blocks in grid
 
         int index = get_global_id(0); //x-coord- (1) is y-coord
         int stride = get_local_size(0)*get_num_groups(0);
@@ -69,9 +66,10 @@ def pyopencl_legval(arraysize, blocksize):
     #passing in command queue = queue
     #global size = x.shape
     #local work size = none (up to implementation)
-    #opencl buffers for kernel parameters (x_gpu, v_gpu, res_gpu)
-    prg.legvander(queue, x_cpu.shape, None, x, v)
-    
+    #special way to handle constants- np.uint16()
+    #opencl buffers for kernel parameters
+    prg.legvander(queue, x_cpu.shape, None, np.uint16(N), np.uint16(deg), x, v)
+
     #move the data back to the cpu
     v_gpu = np.empty_like(v_cpu)
     cl.enqueue_copy(queue, v_gpu, v)
