@@ -1,5 +1,8 @@
 import numpy as np
 
+#set numpy random seed
+np.random.seed(42)
+
 def numpy_legval(arraysize, blocksize):
     #here are our data
     x = np.random.rand(arraysize).astype(np.float32)
@@ -20,3 +23,6 @@ def numpy_legval(arraysize, blocksize):
     cpu_res = np.moveaxis(v, 0, -1)
     return cpu_res
 
+
+results = numpy_legval(arraysize=100,blocksize=32)
+print(results)
