@@ -3,6 +3,9 @@ import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
 
+#set numpy random seed
+np.random.seed(42)
+
 def pycuda_legval(arraysize, blocksize):
     #here are our data
     x = np.random.rand(arraysize).astype(np.float32)
