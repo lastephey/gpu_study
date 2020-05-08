@@ -26,9 +26,12 @@ def numba_legval(arraysize, blocksize):
     #launch the kernel
     legvander[1, blocksize](x, deg, v)
     v_cpu = cp.asnumpy(v)
+    #also moveaxis here?
+    #v_moveaxis = np.moveaxis(v_cpu, 0, -1)
     return v_cpu
 
 
-##for testing
-#results = numba_legval(100,32)
-#print(results)
+#for testing
+results = numba_legval(1000,32)
+print(results)
+print(results.shape)

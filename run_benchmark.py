@@ -2,6 +2,7 @@
 import argparse
 import os
 import timeit 
+import numpy as np
 
 #our bash_orchestrator script will call this one with the apprpropriate
 #arguments for each framework
@@ -38,16 +39,44 @@ def write_output():
     print("output data written")
     return
 
+def correctness_check(framework, benchmark, arraysize, blocksize):
+    print("checking for correctness")
+    location = '/global/cscratch1/sd/stephey/gpu_study/results/'
+    filename = location + str(framework) + '_' + str(benchmark) + '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
+    results = np.load(filename)
+    numpy_filename = location + 'numpy_' + str(benchmark) + '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
+    numpy_results = np.load(numpy_filename)
+    return np.allclose(results, numpy_results) #will have to adjust the default tolerance here
+
+def get_save_results(framework, benchmark, arraysize, blocksize):
+    #use this function to compare our framework to numpy cpu baseline (which we'll take as ground truth)
+    #need some good naming conventions, good way to save files so we can compare the right thing
+    print("computing results")
+
+    #some hacks to live import the module and function
+    module = __import__('{}_framework'.format(framework))
+    submodule = str(framework) + '_' + str(benchmark)
+    results = getattr(module, submodule)(arraysize, blocksize) 
+    print("results:", results)
+
+    #now save the data (eventually add timestamp, jobid, something better...)
+    location = '/global/cscratch1/sd/stephey/gpu_study/results/'
+    filename = location + str(framework) + '_' + str(benchmark) + '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
+    np.save(filename, results)
+    return
+
 def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
     timeit_setup = 'import {}_framework; arraysize={}; blocksize={}'\
                    .format(framework, arraysize, blocksize)
-    print(timeit_setup)               
+    #print(timeit_setup)               
     timeit_code = 'results = {}_framework.{}_{}(arraysize, blocksize)'\
                   .format(framework, framework, benchmark)
-    print(timeit_code)              
-    times = timeit.repeat(setup=timeit_setup, stmt=timeit_code, repeat=repeat, number=number)
+    #print(timeit_code)              
+    timeit_data = timeit.repeat(setup=timeit_setup, stmt=timeit_code, repeat=repeat, number=number)
     print('Min {} {} time of {} trials, {} runs each: {}'\
-          .format(framework, benchmark, repeat, number, min(times)))
+          .format(framework, benchmark, repeat, number, min(timeit_data)))
+
+    return timeit_data
 
 def main():
     args = parse_arguments()
@@ -57,16 +86,31 @@ def main():
         for benchmark in args.benchmarks:
             for arraysize in args.arrays:
                 #for blocksize in args.blocks:
+                blocksize = args.blocksize
                 print("running benchmark:")
                 print("framework:", framework)
                 print("benchmark:", benchmark)
                 print("arraysize:", arraysize)
-                print("blocksize:", args.blocksize)
+                print("blocksize:", blocksize)
                 print("repeat:", args.repeat)
                 print("ntests:", args.ntests)
-                results = time_kernel(framework, benchmark, arraysize, 
-                                          blocksize=args.blocksize,
+                results = time_kernel(framework, benchmark, arraysize, blocksize,
                                           repeat=args.repeat, number=args.ntests)
+
+                #if framework = numpy. need to save the files and get them ready
+                #for correctness checking via allclose or something (although most likely
+                #we'll only agree to single precision in some frameworks)
+                get_save_results(framework, benchmark, arraysize, blocksize)
+                #now see if those results are actually correct (agree with numpy, anyway)
+                if framework != 'numpy':
+                    correct = correctness_check(framework, benchmark, arraysize, blocksize)
+                else:
+                    correct = True #for numpy
+                if correct == False:
+                    print('{} {} results do not agree with numpy'.format(framework, benchmark))
+                else:
+                    print('results agree')
+
     write_output()
     return
 

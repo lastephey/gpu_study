@@ -30,3 +30,8 @@ def cupy_legval(arraysize, blocksize):
     cpu_res = cp.moveaxis(v, 0, -1).get()
     return cpu_res
 
+#for testing
+results = cupy_legval(arraysize=1000,blocksize=32)
+print(results)
+print(results.shape)
+
