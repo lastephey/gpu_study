@@ -22,18 +22,18 @@ source activate cupy
 printf "loading cupy conda environnment\n"
 srun -n 1 python run_benchmark.py -f cupy -a 1000
 source deactivate
-###
-####pycuda
-###source activate pycuda
-###printf "loading pycuda conda environment\n"
-###srun -n 1 python run_benchmark.py -f pycuda -a 1000
-###source deactivate
-###
-####pyopencl
-###source activate pyopencl
-###printf "loading pyopencl conda environnment\n"
-###srun -n 1 python run_benchmark.py -f pyopencl -a 1000
-###source deactivate
+
+#pycuda
+source activate pycuda
+printf "loading pycuda conda environment\n"
+srun -n 1 python run_benchmark.py -f pycuda -a 1000
+source deactivate
+
+#pyopencl
+source activate pyopencl
+printf "loading pyopencl conda environnment\n"
+srun -n 1 python run_benchmark.py -f pyopencl -a 1000
+source deactivate
 
 ####jax
 ###source activate jax

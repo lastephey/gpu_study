@@ -4,18 +4,13 @@ import os
 import timeit 
 import numpy as np
 
-#our bash_orchestrator script will call this one with the apprpropriate
-#arguments for each framework
-
-#top level needs to be be bash, not python, because we'll need a different
-#codna env for each framework
-
-#should have nice argparse
-#which benchmarks/functions
-#how many timeit iterations
-#arraysize
-#kernelsize
-#where to write what to name output? or have that happen automatically?
+#TODO: fix numba so it gives the right answer
+#TODO: look at precision between pycuda, pyopencl, and numpy
+#TODO: add some logging, write stdout to logfile
+#TODO: we can generate input data here and pass in rather than regenerating every time
+#TODO: other frameworks (jax and legate)
+#TODO: other benchmarks
+#TODO: make bash orchestrator more clever
 
 def parse_arguments():
     print("parsing data")
@@ -117,5 +112,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-#should save the metadata in some nice way
-#should write a nice output file (or files?)
+
