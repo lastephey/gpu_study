@@ -3,6 +3,19 @@
 In this project we'll try lots of frameworks for using 
 Python on GPUs.
 
+# To run
+
+Get shared node on cori gpu:
+
+```
+module load esslurm python cuda
+salloc -C gpu -N 1 -t 60 -c 10 -G 1 -A nstaff
+```
+
+Modify `bash_orchestrator.sh` to choose frameworks and array sizes.
+
+Results are written to `/results` directory.
+
 # Frameworks 
 
 ## NumPy (CPU baseline and correctness)
