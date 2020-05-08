@@ -17,18 +17,15 @@ def legvander(x, deg, v):
 
 def numba_legval(arraysize, blocksize):
     #here are our data
-    x = cp.asarray(np.random.rand(arraysize))
+    x = np.asarray(np.random.rand(arraysize)).astype(np.float32)
     N = x.shape[0]
     deg = 10
     ideg = deg + 1
-    v = cp.zeros((ideg,N))
+    v = cp.ndarray((ideg,N)).astype(cp.float32)
 
-    #launch the kernel
-    legvander[1, blocksize](x, deg, v)
-    v_cpu = cp.asnumpy(v)
-    #also moveaxis here?
-    #v_moveaxis = np.moveaxis(v_cpu, 0, -1)
-    return v_cpu
+    numblocks = (len(x) + blocksize - 1) // blocksize
+    legvander[numblocks, blocksize](x, deg, v)
+    return v
 
 
 #for testing
