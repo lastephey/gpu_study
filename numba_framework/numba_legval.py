@@ -1,5 +1,5 @@
-import numpy as np
 from numba import cuda
+import numpy as np
 import cupy as cp
 
 #set numpy random seed
@@ -7,47 +7,35 @@ np.random.seed(42)
 
 @cuda.jit
 def legvander(x, deg, v):
-
-    #be a little more explicit here
-    index = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x;
-    stride = cuda.blockDim.x * cuda.gridDim.x;
-    
-    for i in range(index, x.shape[0], stride):
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    for i in range(i, x.shape[0], stride):
         v[i][0] = 1
         v[i][1] = x[i]
         for j in range(2, deg + 1):
             v[i][j] = (v[i][j-1]*x[i]*(2*j - 1) - v[i][j-2]*(j - 1)) / j
 
 def numba_legval(arraysize, blocksize):
-    #here are our data
+    """Temporary wrapper that allocates memory and defines grid before calling legvander.
+    Probably won't be needed once cupy has the correpsponding legvander function.
+    Input: Same as cpu version of legvander
+    Output: legvander matrix, cp.ndarray
+    """
     x_cpu = np.random.rand(arraysize)
-    N = x_cpu.shape[0]
     deg = 10
     ideg = deg + 1
-    v_cpu = np.ndarray((ideg,N))
+    N = x_cpu.shape[0]
 
-    #move x and v to the device
-    x = cp.asarray(x_cpu)
-    v = cp.asarray(v_cpu)
+    #move to gpu
+    x_gpu = cp.array(x_cpu)
+    v = cp.zeros((N, ideg))
+    #note that this is N,ideg UNLIKE pycuda and pyopencl
 
-    numblocks = (len(x_cpu) + blocksize - 1) // blocksize
-
-    legvander[numblocks, blocksize](x, deg, v)
-
-    #move v back to the host
-    #v_gpu = v.copy_to_host()
-
-    #try existing array
-    #ary = np.empty(shape=v.shape, dtype=v.dtype)
-    #v.copy_to_host(ary)
-
-    #use cupy here, it's the only thing that works
+    numblocks = (N + blocksize - 1) // blocksize
+    legvander[numblocks, blocksize](x_gpu, deg, v)
     v_gpu = v.get()
+    return v
 
-    #return cpu values
-    #figure out moveaxis later
-    return v_gpu
 
-#results = numba_legval(1000,32)
-#print(results)
-#print(results.shape)
+
+
