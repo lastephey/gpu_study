@@ -26,8 +26,9 @@ def cupy_legval(arraysize, blocksize):
         v[1] = x
         for i in range(2, deg + 1):
             v[i] = (v[i-1]*x*(2*i - 1) - v[i-2]*(i - 1))/i
-    #return cpu values for correctness checking
-    cpu_res = cp.moveaxis(v, 0, -1).get()
+    #return cpu values
+    #figure out moveaxis later
+    cpu_res = v.get()
     return cpu_res
 
 #for testing

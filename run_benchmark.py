@@ -23,7 +23,7 @@ def parse_arguments():
                         help='size of array for benchmarks')
     parser.add_argument('--blocksize', '-s', type=int, nargs='+', default=32,
                         help='blocksize for gpu kernels')
-    parser.add_argument('--repeat', '-r', type=int, default=3,
+    parser.add_argument('--repeat', '-r', type=int, default=1,
                         help='how many times timeit will run')
     parser.add_argument('--ntests', '-n', type=int, default=100,
                         help='how many times timeit will run each test')
@@ -52,7 +52,8 @@ def get_save_results(framework, benchmark, arraysize, blocksize):
     module = __import__('{}_framework'.format(framework))
     submodule = str(framework) + '_' + str(benchmark)
     results = getattr(module, submodule)(arraysize, blocksize) 
-    print("results:", results)
+    print("{} results: {}".format(framework, results))
+    print(results.shape)
 
     #now save the data (eventually add timestamp, jobid, something better...)
     location = '/global/cscratch1/sd/stephey/gpu_study/results/'

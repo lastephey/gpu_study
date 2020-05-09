@@ -60,11 +60,10 @@ def pycuda_legval(arraysize, blocksize):
     #move data from host to device
     cuda.memcpy_dtoh(v_result, v_gpu)
     
-    #need moveaxis to get the right answer (but not with numba)
-    #why do we need moveaxis here but not in numba? maybe some kind of row/column shift there?
-    v_moveaxis = np.moveaxis(v_result, 0, -1)
-    #return values for correctness checking
-    return v_moveaxis
+    #return cpu value
+    #figure out moveaxis later
+
+    return v_result
 
 
 
