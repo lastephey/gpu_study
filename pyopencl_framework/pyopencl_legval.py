@@ -74,10 +74,9 @@ def pyopencl_legval(arraysize, blocksize):
     v_gpu = np.empty_like(v_cpu)
     cl.enqueue_copy(queue, v_gpu, v)
   
-    #return cpu values
-    #figure out moveaxis later
-
-    return v_gpu
+    #need to transpose to get in the same form as numpy
+    cpu_trans = v_gpu.transpose(1, 0)
+    return cpu_trans
 
 #results = pyopencl_legval(arraysize=100,blocksize=32)
 #print(results)

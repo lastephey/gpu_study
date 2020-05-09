@@ -60,10 +60,10 @@ def pycuda_legval(arraysize, blocksize):
     #move data from host to device
     cuda.memcpy_dtoh(v_result, v_gpu)
     
-    #return cpu value
-    #figure out moveaxis later
+    #need to transpose to get in the same form as numpy
+    cpu_trans = v_result.transpose(1, 0)
+    return cpu_trans
 
-    return v_result
 
 
 

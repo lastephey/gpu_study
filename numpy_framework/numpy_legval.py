@@ -30,7 +30,7 @@ def numpy_legval(arraysize, blocksize):
     results = np.polynomial.legendre.legvander(x, deg)
     return results
 
-#for testing
-results = numpy_legval(arraysize=1000,blocksize=32)
-print(results)
-print(results.shape)
+##for testing
+#results = numpy_legval(arraysize=1000,blocksize=32)
+#print(results)
+#print(results.shape)

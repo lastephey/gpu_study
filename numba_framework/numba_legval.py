@@ -48,6 +48,6 @@ def numba_legval(arraysize, blocksize):
     #figure out moveaxis later
     return v_gpu
 
-rsults = numba_legval(1000,32)
-print(results)
-print(results.shape)
+#results = numba_legval(1000,32)
+#print(results)
+#print(results.shape)
