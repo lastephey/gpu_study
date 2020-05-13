@@ -27,7 +27,10 @@ def jax_legval(arraysize, blocksize):
 
     #call jax-jitted function
     res = legvander(x, v)
-    return res
+    res_np = np.array(res)
+    #i think we need to rotate left like the other frameworks
+    res_trans = res_np.transpose(1, 0)
+    return res_trans
 
 @jax.jit
 def legvander(x, v):
@@ -43,9 +46,9 @@ def legvander(x, v):
         v = index_update(v, index[i,:], (v[i-1]*x*(2*i - 1) - v[i-2]*(i - 1))/i)
     return v
 
-arraysize = 1000
-blocksize = 32
-results = jax_legval(arraysize, blocksize)
-print(type(results))
-print(results)
+###arraysize = 1000
+###blocksize = 32
+###results = jax_legval(arraysize, blocksize)
+###print(type(results))
+###print(results)
     
