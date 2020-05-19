@@ -6,8 +6,8 @@ import datetime
 import numpy as np
 
 #TODO: look at precision between pycuda, pyopencl, and numpy
-#TODO: add some logging, write stdout to logfile
-#TODO: we can generate input data here and pass in rather than regenerating every time
+#TODO: find some way to time the data movement separately (or remove it) via separate timeit calls
+#TODO: can we generate the data once and re-use it?
 #TODO: other benchmarks
 #TODO: make bash orchestrator more clever
 
@@ -28,10 +28,6 @@ def parse_arguments():
                         help='how many times timeit will run each test')
     args = parser.parse_args()
     return args
-
-def write_output():
-    #print("output data written")
-    return
 
 def correctness_check(framework, benchmark, arraysize, blocksize):
     print("checking for correctness")
@@ -58,9 +54,12 @@ def get_save_results(framework, benchmark, arraysize, blocksize):
     location = '/global/cscratch1/sd/stephey/gpu_study/results/'
     filename = location + str(framework) + '_' + str(benchmark) + '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
     np.save(filename, results)
+    print("results data saved")
     return
 
 def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
+    #add array creation and data movement to setup?
+
     timeit_setup = 'import {}_framework; arraysize={}; blocksize={}'\
                    .format(framework, arraysize, blocksize)
     #print(timeit_setup)               
@@ -70,7 +69,12 @@ def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
     timeit_list = timeit.repeat(setup=timeit_setup, stmt=timeit_code, repeat=repeat, number=number)
     print('Min {} {} time of {} trials, {} runs each: {}'\
           .format(framework, benchmark, repeat, number, min(timeit_list)))
-    
+   
+    #can we run timeit again with the same setup?
+    timeit_test = timeit.repeat(setup=timeit_setup, stmt="import numpy as np", repeat=repeat, number=number)
+    print("numpy imported as test")
+
+
     timeit_data = np.array(timeit_list)
 
     #need to save timeit data in addition to printing them
@@ -114,7 +118,6 @@ def main():
                 else:
                     print('results agree')
 
-    write_output()
     return
 
 if __name__ == "__main__":
