@@ -2,13 +2,12 @@
 import argparse
 import os
 import timeit 
+import datetime
 import numpy as np
 
-#TODO: fix numba so it gives the right answer
 #TODO: look at precision between pycuda, pyopencl, and numpy
 #TODO: add some logging, write stdout to logfile
 #TODO: we can generate input data here and pass in rather than regenerating every time
-#TODO: other frameworks (jax and legate)
 #TODO: other benchmarks
 #TODO: make bash orchestrator more clever
 
@@ -23,15 +22,15 @@ def parse_arguments():
                         help='size of array for benchmarks')
     parser.add_argument('--blocksize', '-s', type=int, nargs='+', default=32,
                         help='blocksize for gpu kernels')
-    parser.add_argument('--repeat', '-r', type=int, default=1,
+    parser.add_argument('--repeat', '-r', type=int, default=3,
                         help='how many times timeit will run')
-    parser.add_argument('--ntests', '-n', type=int, default=100,
+    parser.add_argument('--ntests', '-n', type=int, default=10,
                         help='how many times timeit will run each test')
     args = parser.parse_args()
     return args
 
 def write_output():
-    print("output data written")
+    #print("output data written")
     return
 
 def correctness_check(framework, benchmark, arraysize, blocksize):
@@ -68,9 +67,17 @@ def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
     timeit_code = 'results = {}_framework.{}_{}(arraysize, blocksize)'\
                   .format(framework, framework, benchmark)
     #print(timeit_code)              
-    timeit_data = timeit.repeat(setup=timeit_setup, stmt=timeit_code, repeat=repeat, number=number)
+    timeit_list = timeit.repeat(setup=timeit_setup, stmt=timeit_code, repeat=repeat, number=number)
     print('Min {} {} time of {} trials, {} runs each: {}'\
-          .format(framework, benchmark, repeat, number, min(timeit_data)))
+          .format(framework, benchmark, repeat, number, min(timeit_list)))
+    
+    timeit_data = np.array(timeit_list)
+
+    #need to save timeit data in addition to printing them
+    now = datetime.datetime.now()
+    location = '/global/cscratch1/sd/stephey/gpu_study/results/'
+    timeit_filename = location + 'timeit_{}_{}_{}_{}'.format(framework, benchmark, arraysize, now)
+    np.save(timeit_filename, timeit_data)
 
     return timeit_data
 

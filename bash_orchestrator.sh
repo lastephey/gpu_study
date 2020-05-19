@@ -35,11 +35,12 @@ printf "loading pyopencl conda environnment\n"
 srun -n 1 python run_benchmark.py -f pyopencl -a 1000
 source deactivate
 
-####jax
-###source activate jax
-####run stuff
-###source deactivate
-###
+#jax
+source activate jax
+printf "loading jax conda environnment\n"
+srun -n 1 python run_benchmark.py -f jax -a 1000
+source deactivate
+
 ####legate
 ###source activate legate
 ####run stuff
