@@ -10,11 +10,13 @@ Get shared node on cori gpu:
 ```
 module load esslurm python cuda
 salloc -C gpu -N 1 -t 60 -c 10 -G 1 -A nstaff
+./bash_orchestrator.sh
 ```
 
 Modify `bash_orchestrator.sh` to choose frameworks and array sizes.
 
-Results are written to `/results` directory.
+Results, timing data, and logfile are written to `/results` directory.
+The logfile is called `log_${SLURMJOBID}.out`
 
 # Frameworks 
 
@@ -40,7 +42,7 @@ Results are written to `/results` directory.
 
 ## JAX
 
-## Legate
+## Legate (coming soon)
 
 # Overview
 
