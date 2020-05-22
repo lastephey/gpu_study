@@ -9,14 +9,15 @@ import numpy as np
 #TODO: find some way to time the data movement separately (or remove it) via separate timeit calls
 #TODO: can we generate the data once and re-use it?
 #TODO: other benchmarks
-#TODO: make bash orchestrator more clever
+#TODO: add ability to skip benchmarks that are not implemented
+#TODO: save timeit data using SLURM_JOB_ID?
 
 def parse_arguments():
     print("parsing data")
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--frameworks', '-f', nargs='+', default=['numpy'],
                         help='which frameworks to use')
-    parser.add_argument('--benchmarks', '-b', nargs='+', default=['legval'],
+    parser.add_argument('--benchmarks', '-b', nargs='+',
                         help='which benchmarks to run')
     parser.add_argument('--arrays', '-a', type=int, nargs='+', default=100,
                         help='size of array for benchmarks')
@@ -33,9 +34,9 @@ def correctness_check(framework, benchmark, arraysize, blocksize):
     print("checking for correctness")
     location = '/global/cscratch1/sd/stephey/gpu_study/results/'
     filename = location + str(framework) + '_' + str(benchmark) + '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
-    results = np.load(filename)
+    results = np.load(filename,allow_pickle=True)
     numpy_filename = location + 'numpy_' + str(benchmark) + '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
-    numpy_results = np.load(numpy_filename)
+    numpy_results = np.load(numpy_filename,allow_pickle=True)
     return np.allclose(results, numpy_results) #will have to adjust the default tolerance here
 
 def get_save_results(framework, benchmark, arraysize, blocksize):
@@ -47,8 +48,8 @@ def get_save_results(framework, benchmark, arraysize, blocksize):
     module = __import__('{}_framework'.format(framework))
     submodule = str(framework) + '_' + str(benchmark)
     results = getattr(module, submodule)(arraysize, blocksize) 
-    print("{} results: {}".format(framework, results))
-    print(results.shape)
+    #print("{} results: {}".format(framework, results))
+    #print(results.shape)
 
     #now save the data (eventually add timestamp, jobid, something better...)
     location = '/global/cscratch1/sd/stephey/gpu_study/results/'
@@ -73,7 +74,6 @@ def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
     #can we run timeit again with the same setup?
     timeit_test = timeit.repeat(setup=timeit_setup, stmt="import numpy as np", repeat=repeat, number=number)
     print("numpy imported as test")
-
 
     timeit_data = np.array(timeit_list)
 
