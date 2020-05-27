@@ -4,7 +4,6 @@
 Created on Fri May 15 16:57:16 2020
 @author: stephey
 generates some plots for our gpu analysis
-based heavily on https://matplotlib.org/3.2.1/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
 """
 
 import os
@@ -13,8 +12,6 @@ import matplotlib.pyplot as plt
 import dateutil.parser
 
 #TODO: maybe add argparse
-#TODO: add error bars/stdev
-
 
 #for now user just enters what they need here:
 
@@ -23,10 +20,8 @@ request_date = '2020-05-21'
 #search folder for data with requested data
 #by default, use most recent timestamp
 benchmark = 'eigh'
-framework = 'cupy'
-#pull all array sizes for requested framework/benchmark
-#expand this or write another script to compare frameworks
-
+frameworks = ['cupy','jax']
+ntrials = 3 #hardcode for now
 
 #we'll need this later
 #messy but yolo
@@ -102,37 +97,51 @@ def query_results(directory, request_date, benchmark, framework):
         index_list.append(ind)
     
     #keep in mind everything has to be sorted for this to work
-    index_keep = np.array(index_list)
-    
+    index_keep = np.array(index_list)    
     frame_keep = framearray_sort[index_keep]
 
     return frame_keep, unique_arraysize
     
-#now open and use the files we selected
-frame_keep, unique_arraysize = query_results(directory, request_date, benchmark, framework)
+#now loop over requested frameworks
+#store data in dict
+timeit_data = {}
+timeit_min = {}
+timeit_stdev = {}
 
 #move to our requested dir
 os.chdir(directory)
 
-#store data in dict
-timeit_data = {}
-timeit_min = {}
-for i, frame in enumerate(frame_keep):
-    size = unique_arraysize[i]
-    timeit_data[size] = np.load(frame)
-    #keep only fastest trial for each arraysize
-    timeit_min[size] = np.min(timeit_data[size])
+for framework in frameworks:    
     
+    #save to assume that framework and frame_keep are in the same order? 
+    frame_keep, unique_arraysize = query_results(directory, request_date, benchmark, framework)
+    timeit_array = np.zeros((len(unique_arraysize), ntrials))
+        
+    for i, frame in enumerate(frame_keep):
+        size = unique_arraysize[i]
+        #there are 3 data points per frame (1 for each of 3 trials)
+        timeit_array[i] = np.load(frame)
+    timeit_data[framework] = timeit_array
+    #find min for each arraysize
+    timeit_min[framework] = np.min(timeit_data[framework],axis=1)
+    #find stdev for each arraysize
+    timeit_stdev[framework] = np.std(timeit_data[framework],axis=1)
+  
     
-    
-format_title = ('Framework: {}, Benchmark: {}').format(framework, benchmark)    
-    
-
+#now that we're done processing the data we can finally plot    
+#here we assume the same unique_arraysize - be careful
+format_title = ('Frameworks: {}, Benchmark: {}').format(frameworks, benchmark)     
 plt.figure()
-plt.bar(range(len(timeit_min)), list(timeit_min.values()), align='center')
-plt.xticks(range(len(timeit_min)), list(timeit_min.keys()))
-plt.ylabel('Runtime (s)')
-plt.xlabel('Arraysize 1D')
+for framework in frameworks:
+    plot_ydata = timeit_min[framework]
+    plot_yerror = timeit_stdev[framework]
+    plot_xdata = unique_arraysize
+    #plt.plot(plot_xdata, plot_ydata)
+    #add errorbars based on stedev
+    plt.errorbar(plot_xdata, plot_ydata, plot_yerror, marker='o')
+    plt.ylabel('Min runtime (s)')
+    plt.xlabel('Arraysize 1D')
+plt.legend(frameworks)    
 plt.title(format_title)
 plt.show()
 
