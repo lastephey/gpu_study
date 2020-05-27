@@ -12,11 +12,12 @@ import matplotlib.pyplot as plt
 import dateutil.parser
 
 #TODO: maybe add argparse
+#TODO: add n^3 ideal scaling
 
 #for now user just enters what they need here:
 
-directory = '/Users/stephey/Dropbox/NERSC/Work/Dates/20200521'
-request_date = '2020-05-21'
+directory = '/Users/stephey/Dropbox/NERSC/Work/Dates/20200527'
+request_date = '2020-05-27'
 #search folder for data with requested data
 #by default, use most recent timestamp
 benchmark = 'eigh'
@@ -130,7 +131,26 @@ for framework in frameworks:
     
 #now that we're done processing the data we can finally plot    
 #here we assume the same unique_arraysize - be careful
-format_title = ('Frameworks: {}, Benchmark: {}').format(frameworks, benchmark)     
+format_title = ('Frameworks: {}, Benchmark: {}').format(frameworks, benchmark)  
+
+
+#for eigh (and maybe others?) we should show ideal n^3 scaling
+ideal_x = np.linspace(unique_arraysize[0], unique_arraysize[-1], 100)
+#scale appropriately to get in right units (s)
+#let's scale to smallest data point (i think?)
+ideal_y_us = np.power(ideal_x,3)
+scale_fac = np.max(ideal_y_us)/np.max(timeit_min['cupy'])
+ideal_y = ideal_y_us/scale_fac
+
+ratio = timeit_min['cupy']/timeit_min['jax']
+
+
+plt.figure()
+plt.plot(unique_arraysize, ratio)
+plt.xlabel('Arraysize 1D')
+plt.ylabel('cupy runtime / jax runtime')
+plt.show()
+   
 plt.figure()
 for framework in frameworks:
     plot_ydata = timeit_min[framework]
@@ -138,10 +158,11 @@ for framework in frameworks:
     plot_xdata = unique_arraysize
     #plt.plot(plot_xdata, plot_ydata)
     #add errorbars based on stedev
-    plt.errorbar(plot_xdata, plot_ydata, plot_yerror, marker='o')
-    plt.ylabel('Min runtime (s)')
-    plt.xlabel('Arraysize 1D')
-plt.legend(frameworks)    
+    plt.errorbar(plot_xdata, plot_ydata, plot_yerror, marker='.', label=framework)
+plt.ylabel('Minimum runtime (s)')
+plt.xlabel('Arraysize 1D')
+plt.plot(ideal_x, ideal_y, label='n^3 scaling')    
+plt.legend()
 plt.title(format_title)
 plt.show()
 
