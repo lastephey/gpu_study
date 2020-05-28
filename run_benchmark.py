@@ -5,6 +5,7 @@ import timeit
 import datetime
 import numpy as np
 
+#TODO: switch to OOP
 #TODO: make sure we can handle single and double precision
 #TODO: find some way to time the data movement separately (or remove it) via separate timeit calls
 #TODO: generate the data once and re-use it?
@@ -38,6 +39,16 @@ def parse_arguments():
                         help='how many times timeit will run each test')
     args = parser.parse_args()
     return args
+
+class Benchmark:
+
+    def __init__(self, framework, benchmark, arraysize, blocksize, precision)
+
+        self.framework = framework
+        self.benchmark = benchmark
+        self.arraysize = arraysize
+        self.blocksize = blocksize
+        self.precision = precision
 
 def correctness_check(framework, benchmark, arraysize, blocksize, precision):
     """
@@ -129,6 +140,27 @@ def time_kernel(framework, benchmark, arraysize, blocksize, precision,
     np.save(timeit_filename, timeit_data)
 
     return timeit_data
+
+def create_benchmark_data(benchmark, precision):
+    """
+    This function will create the appropriate data
+    for the requested benchmark, taking into account
+    array dimension (1,2,3D?) and precision
+
+    Input: benchmark, precision
+
+    Ouput: x_input
+    """
+
+    #continue adding as we incorporate additional benchmarks
+    if bencharmark == 'legval':
+
+    elif benchmark == 'eigh':
+
+    else:
+        print("No information for requested benchamark")
+        exit()
+
 
 def main():
     """
