@@ -5,24 +5,33 @@ import timeit
 import datetime
 import numpy as np
 
-#TODO: look at precision between pycuda, pyopencl, and numpy
+#TODO: make sure we can handle single and double precision
 #TODO: find some way to time the data movement separately (or remove it) via separate timeit calls
-#TODO: can we generate the data once and re-use it?
+#TODO: generate the data once and re-use it?
 #TODO: other benchmarks
-#TODO: add ability to skip benchmarks that are not implemented
-#TODO: save timeit data using SLURM_JOB_ID?
+#TODO: add ability to skip benchmarks that are not implemented or precision that is not possible
+#TODO: add more layers to bash orchestrator
 
 def parse_arguments():
-    print("parsing data")
+    """
+    This function parses command line arguments using Python's argparse
+
+    Input: command line arguments, passed in from bash_orchesrator.sh
+
+    Output: args object, which contains the parsed command line arguments (and defaults)
+    """
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--frameworks', '-f', nargs='+', default=['numpy'],
-                        help='which frameworks to use')
-    parser.add_argument('--benchmarks', '-b', nargs='+',
-                        help='which benchmarks to run')
-    parser.add_argument('--arrays', '-a', type=int, nargs='+', default=100,
+    parser.add_argument('--framework', '-f', default=['numpy'],
+                        help='which framework to use')
+    parser.add_argument('--benchmark', '-b', default=['legval'],
+                        help='which benchmark to run')
+    parser.add_argument('--array', '-a', type=int,  default=100,
                         help='size of array for benchmarks')
-    parser.add_argument('--blocksize', '-s', type=int, nargs='+', default=32,
+    parser.add_argument('--blocksize', '-s', type=int, default=32,
                         help='blocksize for gpu kernels')
+    parser.add_argument('--precision', '-p', type=str, default='double',
+                        help='run benchmarks in single or double precision')
     parser.add_argument('--repeat', '-r', type=int, default=3,
                         help='how many times timeit will run')
     parser.add_argument('--ntests', '-n', type=int, default=10,
@@ -30,36 +39,72 @@ def parse_arguments():
     args = parser.parse_args()
     return args
 
-def correctness_check(framework, benchmark, arraysize, blocksize):
-    print("checking for correctness")
+def correctness_check(framework, benchmark, arraysize, blocksize, precision):
+    """
+
+    This function uses NumPy as ground truth data and compares other frameworks
+    to the NumPy results. It uses np.allclose() to decide if the test passes 
+    or fails.
+
+    Input: framework, benchmark, arraysize, blocksize, precision
+
+    Output: True or False, result of np.allclose
+    """
+
+    #TODO: incorporate precision here
+
     location = '/global/cscratch1/sd/stephey/gpu_study/results/'
-    filename = location + str(framework) + '_' + str(benchmark) + '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
+
+    filename = location + str(framework) + '_' + str(benchmark) + 
+               '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
+
     results = np.load(filename,allow_pickle=True)
-    numpy_filename = location + 'numpy_' + str(benchmark) + '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
+
+    numpy_filename = location + 'numpy_' + str(benchmark) + '_' + 
+                     str(arraysize) + '_' + str(blocksize) + '.npy'
+
+    #load numpy results to compare via np.allclose               
     numpy_results = np.load(numpy_filename,allow_pickle=True)
-    return np.allclose(results, numpy_results) #will have to adjust the default tolerance here
+
+    return np.allclose(results, numpy_results)
 
 def get_save_results(framework, benchmark, arraysize, blocksize):
-    #use this function to compare our framework to numpy cpu baseline (which we'll take as ground truth)
-    #need some good naming conventions, good way to save files so we can compare the right thing
-    print("computing results")
+    """
+    This function saves the results from the timeit runs for use
+    later in correctness checking
 
-    #some hacks to live import the module and function
+    Input: framework, benchmark, arraysize, blocksize
+
+    Output: none (results are saved in .npy file
+    """
+
+    #live import the module and function
     module = __import__('{}_framework'.format(framework))
     submodule = str(framework) + '_' + str(benchmark)
     results = getattr(module, submodule)(arraysize, blocksize) 
-    #print("{} results: {}".format(framework, results))
-    #print(results.shape)
 
-    #now save the data (eventually add timestamp, jobid, something better...)
     location = '/global/cscratch1/sd/stephey/gpu_study/results/'
-    filename = location + str(framework) + '_' + str(benchmark) + '_' + str(arraysize) + '_' + str(blocksize) + '.npy'
+
+    filename = location + str(framework) + '_' + str(benchmark) + '_' + 
+               str(arraysize) + '_' + str(blocksize) + '.npy'
+
     np.save(filename, results)
-    print("results data saved")
     return
 
-def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
-    #add array creation and data movement to setup?
+def time_kernel(framework, benchmark, arraysize, blocksize, precision, 
+                x_input, repeat, number):
+    """
+    This function uses the Python timeit module to time our benchmark.
+    It runs ntrials(number) times and repeat times per trial. 
+
+    Input: framework, benchmark, arraysize, blocksize, precision, 
+    x_input (same data for all frameworks), repeat, number
+
+    Output: the array timeit_data, which contains the data from ntrials
+
+    """
+
+    #TODO: figure out how to reuse our same data x_input
 
     timeit_setup = 'import {}_framework; arraysize={}; blocksize={}'\
                    .format(framework, arraysize, blocksize)
@@ -71,7 +116,7 @@ def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
     print('Min {} {} time of {} trials, {} runs each: {}'\
           .format(framework, benchmark, repeat, number, min(timeit_list)))
    
-    #can we run timeit again with the same setup?
+    #can we run timeit again with the same setup? yes, here is how:
     timeit_test = timeit.repeat(setup=timeit_setup, stmt="import numpy as np", repeat=repeat, number=number)
     print("numpy imported as test")
 
@@ -86,37 +131,56 @@ def time_kernel(framework, benchmark, arraysize, blocksize, repeat, number):
     return timeit_data
 
 def main():
-    args = parse_arguments()
-    print("all frameworks:", args.frameworks)
-    print("all benchmarks:", args.benchmarks)
-    for framework in args.frameworks:
-        for benchmark in args.benchmarks:
-            for arraysize in args.arrays:
-                #for blocksize in args.blocks:
-                blocksize = args.blocksize
-                print("running benchmark:")
-                print("framework:", framework)
-                print("benchmark:", benchmark)
-                print("arraysize:", arraysize)
-                print("blocksize:", blocksize)
-                print("repeat:", args.repeat)
-                print("ntests:", args.ntests)
-                results = time_kernel(framework, benchmark, arraysize, blocksize,
-                                          repeat=args.repeat, number=args.ntests)
+    """
+    This is the main functin of our run_benchmark program
 
-                #if framework = numpy. need to save the files and get them ready
-                #for correctness checking via allclose or something (although most likely
-                #we'll only agree to single precision in some frameworks)
-                get_save_results(framework, benchmark, arraysize, blocksize)
-                #now see if those results are actually correct (agree with numpy, anyway)
-                if framework != 'numpy':
-                    correct = correctness_check(framework, benchmark, arraysize, blocksize)
-                else:
-                    correct = True #for numpy
-                if correct == False:
-                    print('{} {} results do not agree with numpy'.format(framework, benchmark))
-                else:
-                    print('results agree')
+    Input: command line args, which are parsed
+
+    Output: none, although several files are saved and a logfile that
+    captures stdout is written to log_$SLURMJOBID
+
+    """
+
+    args = parse_arguments()
+
+    framework = args.framework
+    benchmark = args.benchmark
+    arraysize = args.arraysize
+    precision = args.precision
+    
+    print("executing {} {} arraysize {} precision {}".format(framework, benchmark, arraysize, precision))
+
+    #TODO: depending on the benchmark, we might need to generate
+    #different kinds,sizes of data. Proabaly need a more sophisticated
+    #function to get this right
+
+    if args.precision == single:
+        #generate single precision array
+        x_input = np.random.rand(arraysize).astype('float32')
+    if args.precision == double:
+        #generate double precision array
+        x_input = np.random.rand(arraysize).astype('float64')
+    else:
+        print("Error-- precision must be single or double")
+        exit()
+
+    results = time_kernel(framework, benchmark, arraysize, blocksize,
+                          precision, x_input, repeat=args.repeat, 
+                          number=args.ntests)
+
+    #if framework = numpy. need to save the files and get them ready
+    #for correctness checking
+    get_save_results(framework, benchmark, arraysize, blocksize)
+
+    #now see if those results are actually correct (agree with numpy, anyway)
+    if framework != 'numpy':
+        correct = correctness_check(framework, benchmark, arraysize, blocksize, precision)
+    else:
+        correct = True #for numpy
+    if correct == False:
+        print('{} {} {} results do not agree with numpy'.format(framework, benchmark, precision))
+    else:
+        print('results agree')
 
     return
 
