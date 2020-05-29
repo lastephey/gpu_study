@@ -5,20 +5,15 @@ from __future__ import absolute_import, print_function
 import numpy as np
 import pyopencl as cl
 
-#set numpy random seed
-np.random.seed(42)
-
 #try to make sure we get a gpu
 devices = cl.get_platforms()[0].get_devices(cl.device_type.GPU)
 print(devices)
 
-def pyopencl_legval(arraysize, blocksize):
-    #here are our data
-    x_cpu = np.random.rand(arraysize).astype(np.float32)
-    N = x_cpu.shape[0]
+def pyopencl_legval(input_data, blocksize, precision):
+    N = input_data.shape[0]
     deg = 10
     ideg = deg + 1
-    v_cpu = np.zeros((ideg,N)).astype(np.float32)
+    v_cpu = np.zeros((ideg,N)).astype(precision)
 
     #create context and queue
     ctx = cl.create_some_context()
@@ -26,7 +21,7 @@ def pyopencl_legval(arraysize, blocksize):
     
     #allocate the gpu memory
     mf = cl.mem_flags
-    x = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=x_cpu)
+    x = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=input_data)
     v = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=v_cpu)
 
     #need to figure out how to pass constants in here, too

@@ -3,19 +3,14 @@ import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
 
-#set numpy random seed
-np.random.seed(42)
-
-def pycuda_legval(arraysize, blocksize):
-    #here are our data
-    x = np.random.rand(arraysize).astype(np.float32)
-    N = x.shape[0]
+def pycuda_legval(input_data, blocksize, precision):
+    N = input_data.shape[0]
     deg = 10
     ideg = deg + 1
-    v = np.zeros((ideg,N)).astype(np.float32)
+    v = np.zeros((ideg,N)).astype(precision)
     
     #allocate the gpu memory
-    x_gpu = cuda.mem_alloc(x.size * x.dtype.itemsize)
+    x_gpu = cuda.mem_alloc(input_data.size * input_data.dtype.itemsize)
     v_gpu = cuda.mem_alloc(v.size * v.dtype.itemsize)
     
     #move the data to the gpu memory we allocated
