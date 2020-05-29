@@ -1,10 +1,16 @@
 import numpy as np
 
-def numpy_eigh(arraysize,blocksize):
+def numpy_eigh(input_data,blocksize):
+    """
+    Here we compute eigh using numpy
 
-    #create random array here for now
-    x = np.random.random((arraysize,arraysize))
+    Input: input_data (shared between benchmarks), blocksize
+    which in numpy is ignored
     
-    w,v = np.linalg.eigh(x) #w are eigenvalues, v are eigenvectors
+    Output: w, the eigenvalue matrix
+    """
+    
+    w,v = np.linalg.eigh(input_data) #w are eigenvalues, v are eigenvectors
+
     return w
 
