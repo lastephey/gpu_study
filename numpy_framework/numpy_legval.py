@@ -1,6 +1,6 @@
 import numpy as np
 
-def numpy_legval(input_data, blocksize):
+def numpy_legval(input_data, blocksize, precision):
     deg = 10
     results = np.polynomial.legendre.legvander(input_data, deg)
     return results

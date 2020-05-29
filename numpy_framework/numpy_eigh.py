@@ -1,6 +1,6 @@
 import numpy as np
 
-def numpy_eigh(input_data,blocksize):
+def numpy_eigh(input_data,blocksize,precision):
     """
     Here we compute eigh using numpy
 

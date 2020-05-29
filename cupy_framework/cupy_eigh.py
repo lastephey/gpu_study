@@ -1,11 +1,9 @@
 import numpy as np
 import cupy as cp
 
-def cupy_eigh(arraysize,blocksize):
+def cupy_eigh(input_data,blocksize,precision):
 
-    #create random array here for now
-    x_cpu = np.random.random((arraysize,arraysize))
-    x = cp.asarray(x_cpu)
+    x = cp.asarray(input_data, dtype=precision)
 
     w,v = cp.linalg.eigh(x)
 

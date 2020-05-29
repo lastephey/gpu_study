@@ -1,20 +1,17 @@
 import numpy as np
 import cupy as cp
 
-#set numpy random seed
-np.random.seed(42)
 
-def cupy_legval(arraysize, blocksize):
-    #here are our data
-    x_cpu = np.random.rand(arraysize).astype(np.float32)
-    N = x_cpu.shape[0]
+def cupy_legval(input_data, blocksize, precision):
+
+    N = input_data.shape[0]
     deg = 10
     ideg = deg + 1
-    v_cpu = np.zeros((ideg,N)).astype(np.float32)
+    v_cpu = np.zeros((ideg,N)).astype(precision)
     
     #allocate the gpu memory 
     #move the data to the gpu memory we allocated
-    x = cp.asarray(x_cpu)
+    x = cp.asarray(input_data)
     v = cp.asarray(v_cpu)
     
     #here is our cuda kernel in raw cuda

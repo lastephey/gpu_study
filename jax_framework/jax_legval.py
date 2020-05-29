@@ -5,25 +5,19 @@ from jax import jit
 import jax.numpy as jnp
 from jax.ops import index, index_add, index_update
 
-#set numpy random seed
-#syntax is different for jax
-np.random.seed(42)
-
 #what is the default device?
 print("default device:", jax.devices()[0])
 
-def jax_legval(arraysize, blocksize):
-    #here are our data
-    x_cpu = np.random.rand(arraysize).astype(np.float32)
-    N = x_cpu.shape[0]
+def jax_legval(input_data, blocksize, precision):
+    N = input_data.shape[0]
     deg = 10
     ideg = deg + 1
-    v_cpu = np.zeros((ideg,N)).astype(np.float32)
+    v_cpu = np.zeros((ideg,N)).astype(precision)
 
     #allocate the gpu memory
     #move the data to the gpu memory we allocated
-    x = jnp.array(x_cpu)
-    v = jnp.array(v_cpu)
+    x = jnp.array(input_data).astype(precision)
+    v = jnp.array(v_cpu).astype(precision)
 
     #call jax-jitted function
     res = legvander(x, v)

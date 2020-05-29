@@ -3,11 +3,9 @@ import jax
 from jax import jit
 import jax.numpy as jnp
 
-def jax_eigh(arraysize,blocksize):
+def jax_eigh(input_data, blocksize, precision):
 
-    #create random array here for now
-    x_cpu = np.random.random((arraysize,arraysize))
-    x = jnp.array(x_cpu)
+    x = jnp.array(input_data).astype(precision)
     
     w,v = jnp.linalg.eigh(x)
     

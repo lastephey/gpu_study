@@ -25,6 +25,9 @@ class BenchTask:
         self.ntrials = args.ntrials
         self.ntests = args.ntests
 
+        #set random seed for numpy
+        np.random.seed(42)
+
         #continue adding as we incorporate additional benchmarks
         if self.benchmark == 'legval':
             #legval input is 1D
