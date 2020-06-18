@@ -2,15 +2,16 @@
 
 import os
 import argparse
-import timeit 
 import datetime
+import time
 
 import numpy as np
 
-#TODO: find some way to time the data movement separately (or remove it) via separate timeit calls
-#TODO: generate the data once and re-use it?
+#TODO: make broad OOP, get rid of weird module hack- make each framework, benchmark a subclass
 #TODO: other benchmarks
 #TODO: add ability to skip benchmarks that are not implemented or precision that is not possible
+#TODO: fix docstrings
+#TODO: add tmove tracking to all benchmarks
 
 class BenchTask:
 
@@ -23,11 +24,11 @@ class BenchTask:
         self.blocksize = args.blocksize
         self.precision = args.precision
         self.ntrials = args.ntrials
-        self.ntests = args.ntests
 
         #set random seed for numpy
         np.random.seed(42)
 
+        #create uniform input data for all frameworks to share
         #continue adding as we incorporate additional benchmarks
         if self.benchmark == 'legval':
             #legval input is 1D
@@ -55,66 +56,43 @@ class BenchTask:
                             str(self.precision) + '.npy')
 
         #establish filename for the timeit file
+        #better way to capture date/time?
         now = datetime.datetime.now()
-        self.timeit_filename = (location + 'timeit_{}_{}_{}_{}_{}_{}'.format(self.framework, 
+        self.time_filename = (location + 'timeit_{}_{}_{}_{}_{}_{}'.format(self.framework, 
                                self.benchmark, self.arraysize, self.blocksize, self.precision, now))
         return                       
 
 
-    def time_kernel(self):
-        """
-        This function uses the Python timeit module to time our benchmark.
-        It runs ntrials(number) times and repeat times per trial. 
+    def run_kernel(self):
     
-        Input: framework, benchmark, arraysize, blocksize, precision, 
-        x_input (same data for all frameworks), repeat, number
-    
-        Output: the array timeit_data, which contains the data from ntrials
-    
-        """
-    
-        #TODO: figure out how to reuse our same data x_input
-    
-        timeit_setup = 'import {}_framework; arraysize={}; blocksize={}; precision={}'\
-                       .format(self.framework, self.arraysize, self.blocksize, self.precision)
-        #print(timeit_setup)               
-        timeit_code = 'results = {}_framework.{}_{}(arraysize, blocksize, precision)'\
-                      .format(self.framework, self.framework, self.benchmark)
-        #print(timeit_code)              
-        timeit_list = timeit.repeat(setup=timeit_setup, stmt=timeit_code, repeat=self.ntrials, number=self.ntests)
-        print('Min {} {} time of {} trials, {} runs each: {}'\
-              .format(self.framework, self.benchmark, self.ntrials, self.ntests, min(timeit_list)))
-    
-        #can we run timeit again with the same setup? yes, here is how:
-        timeit_test = timeit.repeat(setup=timeit_setup, stmt="import numpy as np", repeat=self.ntrials, number=self.ntests)
-        print("numpy imported as test")
-    
-        timeit_data = np.array(timeit_list)
-    
-        #need to save timeit data in addition to printing them
-        np.save(self.timeit_filename, timeit_data)
-    
-        return timeit_data                               
+        twhole = dict()
+        tmove = dict()
 
-    #have to do this separately bc we can't save data from a timeit run
-    def get_save_results(self):
-        """
-        This function saves the results from the timeit runs for use
-        later in correctness checking
-    
-        Input: framework, benchmark, arraysize, blocksize
-    
-        Output: none (results are saved in .npy file
-        """
-    
         #live import the module and function
-        module = __import__('{}_framework'.format(framework))
-        submodule = str(framework) + '_' + str(benchmark)
-        results = getattr(module, submodule)(arraysize, blocksize)
-    
-    
-        np.save(self.data_filename, results)
-        return
+        #TODO: make this nicer if possible
+        module = __import__('{}_framework'.format(self.framework))
+        submodule = str(self.framework) + '_' + str(self.benchmark)
+
+        #mostly do what timeit does ourslves, but with the ability to keep results
+        #and track data movement times
+        for i in range(self.ntrials):
+            tstart = time.time()
+            #benchtask will have to record and track its own data movement time
+            #for numpy (cpu) tmove will always be 0
+            tm, results = getattr(module, submodule)(self.input_data, self.blocksize, self.precision)
+            tend = time.time()
+            deltat = tend-tstart
+            #record trial
+            twhole[i] = deltat
+            tmove[i] = tm
+
+        #save our data
+        if self.framework is not 'numpy':
+            np.save(self.data_filename, results)
+        else:
+            np.save(self.ref_filename, results)
+
+        return tmove, twhole                            
 
     def correctness_check(self):
         """
@@ -128,23 +106,15 @@ class BenchTask:
         Output: True or False, result of np.allclose
         """
     
-        #TODO: incorporate precision here
+        ref_data = np.load(self.ref_filename)
+        results = np.load(self.data_filename)
     
-        location = '/global/cscratch1/sd/stephey/gpu_study/results/'
-    
-        filename = (location + str(framework) + '_' + str(benchmark) + 
-                   '_' + str(arraysize) + '_' + str(blocksize) + '.npy')
-    
-        results = np.load(filename,allow_pickle=True)
-    
-        numpy_filename = (location + 'numpy_' + str(benchmark) + '_' + 
-                         str(arraysize) + '_' + str(blocksize) + '.npy')
-    
-        #load numpy results to compare via np.allclose               
-        numpy_results = np.load(numpy_filename,allow_pickle=True)
-    
-        return np.allclose(results, numpy_results)
+        if self.framework is not 'numpy':
+            correct = np.allclose(ref_data, results)
+        else:
+            correct = True
 
+        return correct
 
 def parse_arguments():
     """
@@ -166,10 +136,8 @@ def parse_arguments():
                         help='blocksize for gpu kernels')
     parser.add_argument('--precision', '-p', type=str, default='float64',
                         help='run benchmarks using either float32 or float64')
-    parser.add_argument('--ntrials', '-t', type=int, default=3,
-                        help='how many times timeit will run')
-    parser.add_argument('--ntests', '-n', type=int, default=10,
-                        help='how many times timeit will run each test')
+    parser.add_argument('--ntrials', '-t', type=int, default=10,
+                        help='how many times to run each benchmark')
     args = parser.parse_args()
     return args
 
@@ -194,26 +162,20 @@ def main():
     print("benchtask.input_data.shape", benchtask.input_data.shape)
 
     #now run the benchtask
-    timeit_data = benchtask.time_kernel()
+    tmove, twhole = benchtask.run_kernel()
 
-    print("timeit_data:", timeit_data)
+    #display our min values via the min key
+    tmove_key = min(tmove.keys(), key=(lambda k: tmove[k]))
+    twhole_key = min(twhole.keys(), key=(lambda k: twhole[k]))
 
-###
-###    #if framework = numpy. need to save the files and get them ready
-###    #for correctness checking
-###    get_save_results(framework, benchmark, arraysize, blocksize)
-###
-###    #now see if those results are actually correct (agree with numpy, anyway)
-###    if framework != 'numpy':
-###        correct = correctness_check(framework, benchmark, arraysize, blocksize, precision)
-###    else:
-###        correct = True #for numpy
-###    if correct == False:
-###        print('{} {} {} results do not agree with numpy'.format(framework, benchmark, precision))
-###    else:
-###        print('results agree')
-###
-###    return
+    print("min(tmove):", tmove[tmove_key])
+    print("min(twhole):", twhole[twhole_key])
+
+    correct = benchtask.correctness_check()
+
+    print("correct:", correct)
+
+    return
 
 if __name__ == "__main__":
     main()
