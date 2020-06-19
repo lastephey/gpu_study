@@ -1,6 +1,6 @@
 import numpy as np
 import cupy as cp
-
+import time
 
 def cupy_legval(input_data, blocksize, precision):
 
@@ -11,9 +11,12 @@ def cupy_legval(input_data, blocksize, precision):
     
     #allocate the gpu memory 
     #move the data to the gpu memory we allocated
+    tstart = time.time()
     x = cp.asarray(input_data)
     v = cp.asarray(v_cpu)
-    
+    tend = time.time()
+    tmove = tend - tstart
+
     #here is our cuda kernel in raw cuda
     #although we are filling a 2d array (v) it is really a 1d kernel
     
@@ -27,7 +30,7 @@ def cupy_legval(input_data, blocksize, precision):
     cpu_res = v.get()
     #need to transpose to get in the same form as numpy
     cpu_trans = cpu_res.transpose(1, 0)
-    return cpu_trans
+    return tmove, cpu_trans
 
 ##for testing
 #results = cupy_legval(arraysize=1000,blocksize=32)

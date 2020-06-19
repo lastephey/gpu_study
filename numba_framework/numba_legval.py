@@ -1,6 +1,7 @@
 from numba import cuda
 import numpy as np
 import cupy as cp
+import time
 
 @cuda.jit
 def legvander(x, deg, v):
@@ -18,14 +19,22 @@ def numba_legval(input_data, blocksize, precision):
     N = input_data.shape[0]
 
     #move to gpu
+    tstart = time.time()
     x_gpu = cp.array(input_data)
     v = cp.zeros((N, ideg))
+    tend = time.time()
+    tmove = tend - tstart
     #note that this is N,ideg UNLIKE pycuda and pyopencl
 
     numblocks = (N + blocksize - 1) // blocksize
     legvander[numblocks, blocksize](x_gpu, deg, v)
     v_gpu = v.get()
-    return v
+    return tmove, v
+
+####for testing
+###x = np.random.rand(100)
+###results = numba_legval(x, 32, 'float32')
+###print(results)
 
 
 

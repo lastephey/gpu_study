@@ -1,28 +1,33 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 from __future__ import absolute_import, print_function
 import numpy as np
 import pyopencl as cl
-
-#try to make sure we get a gpu
-devices = cl.get_platforms()[0].get_devices(cl.device_type.GPU)
-print(devices)
+import time
 
 def pyopencl_legval(input_data, blocksize, precision):
+    x_cpu = input_data
     N = input_data.shape[0]
     deg = 10
     ideg = deg + 1
     v_cpu = np.zeros((ideg,N)).astype(precision)
+
+    #makes sure we use a gpu and not a cpu
+    devices = cl.get_platforms()[0].get_devices(cl.device_type.GPU)
 
     #create context and queue
     ctx = cl.create_some_context()
     queue = cl.CommandQueue(ctx)
     
     #allocate the gpu memory
+    tstart = time.time()
     mf = cl.mem_flags
-    x = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=input_data)
+    x = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=x_cpu)
     v = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=v_cpu)
+    #explictly transfer the memory so we can time it
+    cl.enqueue_copy(queue, x, input_data)
+    cl.enqueue_copy(queue, v, v_cpu)
+    tend = time.time()
+    tmove = tend - tstart
 
     #need to figure out how to pass constants in here, too
     prg = cl.Program(ctx, """
@@ -71,9 +76,11 @@ def pyopencl_legval(input_data, blocksize, precision):
   
     #need to transpose to get in the same form as numpy
     cpu_trans = v_gpu.transpose(1, 0)
-    return cpu_trans
+    return tmove, cpu_trans
 
-#results = pyopencl_legval(arraysize=100,blocksize=32)
+#for testing
+#x = np.random.rand(100)
+#results = pyopencl_legval(x, 32, 'float32')
 #print(results)
 
 

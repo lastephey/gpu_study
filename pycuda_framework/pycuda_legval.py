@@ -2,20 +2,25 @@ import numpy as np
 import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
+import time
 
 def pycuda_legval(input_data, blocksize, precision):
-    N = input_data.shape[0]
+    x_cpu = input_data
+    N = x_cpu.shape[0]
     deg = 10
     ideg = deg + 1
     v = np.zeros((ideg,N)).astype(precision)
     
     #allocate the gpu memory
-    x_gpu = cuda.mem_alloc(input_data.size * input_data.dtype.itemsize)
+    tstart = time.time()
+    x_gpu = cuda.mem_alloc(x_cpu.size * x_cpu.dtype.itemsize)
     v_gpu = cuda.mem_alloc(v.size * v.dtype.itemsize)
     
     #move the data to the gpu memory we allocated
-    cuda.memcpy_htod(x_gpu, x)
+    cuda.memcpy_htod(x_gpu, x_cpu)
     cuda.memcpy_htod(v_gpu, v)
+    tend = time.time()
+    tmove = tend - tstart
     
     #here is our cuda kernel in raw cuda
     #although we are filling a 2d array (v) it is really a 1d kernel
@@ -57,9 +62,12 @@ def pycuda_legval(input_data, blocksize, precision):
     
     #need to transpose to get in the same form as numpy
     cpu_trans = v_result.transpose(1, 0)
-    return cpu_trans
+    return tmove, cpu_trans
 
-
+##for testing
+#x = np.random.rand(100)
+#results = pycuda_legval(x, 32, 'float32')
+#print(results)
 
 
 

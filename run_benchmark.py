@@ -9,7 +9,7 @@ import numpy as np
 
 #TODO: make broad OOP, get rid of weird module hack- make each framework, benchmark a subclass
 #TODO: other benchmarks
-#TODO: add ability to skip benchmarks that are not implemented or precision that is not possible
+#TODO: add ability to skip benchmarks that are not implemented
 #TODO: fix docstrings
 #TODO: add tmove tracking to all benchmarks
 
@@ -36,7 +36,7 @@ class BenchTask:
 
         elif self.benchmark == 'eigh':
             #eigh input is 2D
-            self.input_data = np.random.rand((self.arraysize, self.arraysize)).astype(self.precision)
+            self.input_data = np.random.rand(self.arraysize, self.arraysize).astype(self.precision)
 
         else:
             print("No information for requested benchamark")
@@ -79,6 +79,7 @@ class BenchTask:
             tstart = time.time()
             #benchtask will have to record and track its own data movement time
             #for numpy (cpu) tmove will always be 0
+            #TODO: find a better way to do this
             tm, results = getattr(module, submodule)(self.input_data, self.blocksize, self.precision)
             tend = time.time()
             deltat = tend-tstart
@@ -157,25 +158,35 @@ def main():
     #create BenchTask object 
     benchtask = BenchTask(args)
 
-    print("benchtask.framework", benchtask.framework)
-    print("benchtask.benchmark", benchtask.benchmark)
-    print("benchtask.input_data.shape", benchtask.input_data.shape)
+    #print("benchtask.framework", benchtask.framework)
+    #print("benchtask.benchmark", benchtask.benchmark)
+    #print("benchtask.input_data.shape", benchtask.input_data.shape)
 
-    #now run the benchtask
-    tmove, twhole = benchtask.run_kernel()
+    #check to see if requested precision is possible in our framework
+    #TODO: find better way to skip unimplemented benchmarks
+    no64 = ['jax', 'pycuda', 'pyopencl']
+    noeigh = ['numba', 'pycuda', 'pyopencl']
+    if benchtask.framework in no64 and benchtask.precision == 'float64':
+        print("float64 not availble in {}, skipping".format(benchtask.framework))
+        return
+    elif benchtask.framework in noeigh and benchtask.benchmark == 'eigh':
+        print("eigh not implemented in {}, skipping".format(benchtask.framework))
+        return
+    else:
+        tmove, twhole = benchtask.run_kernel()
 
-    #display our min values via the min key
-    tmove_key = min(tmove.keys(), key=(lambda k: tmove[k]))
-    twhole_key = min(twhole.keys(), key=(lambda k: twhole[k]))
-
-    print("min(tmove):", tmove[tmove_key])
-    print("min(twhole):", twhole[twhole_key])
-
-    correct = benchtask.correctness_check()
-
-    print("correct:", correct)
-
-    return
+        #display our min values via the min key
+        tmove_key = min(tmove.keys(), key=(lambda k: tmove[k]))
+        twhole_key = min(twhole.keys(), key=(lambda k: twhole[k]))
+    
+        print("min(tmove):", tmove[tmove_key])
+        print("min(twhole):", twhole[twhole_key])
+    
+        correct = benchtask.correctness_check()
+    
+        print("correct:", correct)
+    
+        return
 
 if __name__ == "__main__":
     main()

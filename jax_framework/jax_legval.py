@@ -1,9 +1,9 @@
 import numpy as np
-
 import jax
 from jax import jit
 import jax.numpy as jnp
 from jax.ops import index, index_add, index_update
+import time
 
 #what is the default device?
 print("default device:", jax.devices()[0])
@@ -16,15 +16,18 @@ def jax_legval(input_data, blocksize, precision):
 
     #allocate the gpu memory
     #move the data to the gpu memory we allocated
+    tstart = time.time()
     x = jnp.array(input_data).astype(precision)
     v = jnp.array(v_cpu).astype(precision)
+    tend = time.time()
+    tmove = tend - tstart
 
     #call jax-jitted function
     res = legvander(x, v)
     res_np = np.array(res)
     #i think we need to rotate left like the other frameworks
     res_trans = res_np.transpose(1, 0)
-    return res_trans
+    return tmove, res_trans
 
 @jax.jit
 def legvander(x, v):
