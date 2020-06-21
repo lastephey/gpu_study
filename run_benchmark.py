@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import argparse
 import datetime
 import time
 
 import numpy as np
 
-#TODO: make broad OOP, get rid of weird module hack- make each framework, benchmark a subclass
-#TODO: other benchmarks
-#TODO: add ability to skip benchmarks that are not implemented
+#TODO: fix broken analysis
 #TODO: fix docstrings
-#TODO: add tmove tracking to all benchmarks
 
 class BenchTask:
 
@@ -40,26 +38,26 @@ class BenchTask:
 
         else:
             print("No information for requested benchamark")
-            exit()
+            sys.exit()
 
         #hardcode path for now
         location = '/global/cscratch1/sd/stephey/gpu_study/results/'
 
         #establish filename for output data (used in correctness checking)
-        self.data_filename = (location + str(self.framework) + '_' + str(self.benchmark)
+        self.data_filename = (location + 'data_' + str(self.framework) + '_' + str(self.benchmark)
                              + '_' + str(self.arraysize) + '_' + str(self.blocksize) + '_'
                              + (self.precision) + '.npy')
 
         #establish filename for the reference numpy data file
-        self.ref_filename = (location + 'numpy_' + str(self.benchmark) + '_' +
+        self.ref_filename = (location + 'ref_' + str(self.benchmark) + '_' +
                             str(self.arraysize) + '_' + str(self.blocksize) + '_' + 
                             str(self.precision) + '.npy')
 
-        #establish filename for the timeit file
-        #better way to capture date/time?
-        now = datetime.datetime.now()
-        self.time_filename = (location + 'timeit_{}_{}_{}_{}_{}_{}'.format(self.framework, 
-                               self.benchmark, self.arraysize, self.blocksize, self.precision, now))
+        #establish filename for the time data
+        self.time_filename = (location + 'time_' + str(self.framework) + '_' + str(self.benchmark) + '_' +
+                             str(self.arraysize) + '_' + str(self.blocksize) + '_' + 
+                             str(self.precision) + '.npy')       
+
         return                       
 
 
@@ -87,11 +85,13 @@ class BenchTask:
             twhole[i] = deltat
             tmove[i] = tm
 
-        #save our data
-        if self.framework is not 'numpy':
-            np.save(self.data_filename, results)
-        else:
+        #save our results data and timing data
+        if self.framework == 'numpy':
             np.save(self.ref_filename, results)
+            np.save(self.time_filename, tmove, twhole)
+        else:
+            np.save(self.data_filename, results)
+            np.save(self.time_filename, tmove, twhole)
 
         return tmove, twhole                            
 
@@ -107,10 +107,9 @@ class BenchTask:
         Output: True or False, result of np.allclose
         """
     
-        ref_data = np.load(self.ref_filename)
-        results = np.load(self.data_filename)
-    
-        if self.framework is not 'numpy':
+        if self.framework != 'numpy':
+            ref_data = np.load(self.ref_filename, allow_pickle=True)
+            results = np.load(self.data_filename, allow_pickle=True)
             correct = np.allclose(ref_data, results)
         else:
             correct = True
@@ -157,10 +156,6 @@ def main():
 
     #create BenchTask object 
     benchtask = BenchTask(args)
-
-    #print("benchtask.framework", benchtask.framework)
-    #print("benchtask.benchmark", benchtask.benchmark)
-    #print("benchtask.input_data.shape", benchtask.input_data.shape)
 
     #check to see if requested precision is possible in our framework
     #TODO: find better way to skip unimplemented benchmarks
