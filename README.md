@@ -9,7 +9,7 @@ Get shared node on cori gpu:
 
 ```
 module load esslurm python cuda
-salloc -C gpu -N 1 -t 60 -c 10 -G 1 -A nstaff
+salloc -C gpu -N 1 -t 60 -c 10 -G 1 -A m1759 -q special
 ./bash_orchestrator.sh
 ```
 
