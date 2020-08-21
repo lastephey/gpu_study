@@ -4,7 +4,7 @@
 
 #set to false if you want stdout
 #set to true if you want to reroute to logfile
-log=false
+log=true
 
 if $log; then
     LOG_FILE=/global/cscratch1/sd/stephey/gpu_study/results/log_${SLURM_JOB_ID}.out
@@ -15,10 +15,14 @@ fi
 #source your favorite python
 module load python
 
+#jax needs to know where to find cuda
+#why does jax need cuda anyway
+export XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/common/software/cuda/10.2.89
+
 #array settings "" to separate items
 declare -a BENCHMARKS=("legval" "eigh")
 declare -a FRAMEWORKS=("numpy" "cupy" "jax" "numba" "pycuda" "pyopencl")
-declare -a ARRAYSIZES=("100")
+declare -a ARRAYSIZES=("100" "500" "1000" "5000")
 declare -a BLOCKSIZE=("32")
 declare -a PRECISION=("float32" "float64")
 
