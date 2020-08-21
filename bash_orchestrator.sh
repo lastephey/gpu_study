@@ -18,6 +18,8 @@ module load python
 #jax needs to know where to find cuda
 #why does jax need cuda anyway
 export XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/common/software/cuda/10.2.89
+#jax also allows 64 bit precision now
+export JAX_ENABLE_X64=True
 
 #array settings "" to separate items
 declare -a BENCHMARKS=("legval" "eigh")

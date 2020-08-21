@@ -159,7 +159,7 @@ def main():
 
     #check to see if requested precision is possible in our framework
     #TODO: find better way to skip unimplemented benchmarks
-    no64 = ['jax', 'pycuda', 'pyopencl']
+    no64 = ['pycuda', 'pyopencl']
     noeigh = ['numba', 'pycuda', 'pyopencl']
     if benchtask.framework in no64 and benchtask.precision == 'float64':
         print("float64 not availble in {}, skipping".format(benchtask.framework))

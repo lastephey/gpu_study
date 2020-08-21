@@ -31,10 +31,10 @@ def numba_legval(input_data, blocksize, precision):
     v_gpu = v.get()
     return tmove, v
 
-#for testing
-x = np.random.rand(100)
-results = numba_legval(x, 32, 'float32')
-print(results)
+#####for testing
+####x = np.random.rand(100)
+####results = numba_legval(x, 32, 'float32')
+####print(results)
 
 
 
